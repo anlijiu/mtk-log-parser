@@ -1,0 +1,3 @@
+#!/bin/bash
+
+tree-sitter parse /home/an/a/APLog_2026_0414_025340__2/kernel_log_2026_0414_031622.curf

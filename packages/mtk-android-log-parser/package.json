@@ -1,0 +1,25 @@
+{
+  "name": "mtk-android-log-parser",
+  "version": "1.0.0",
+  "description": "Android (main/sys) log parser",
+  "scripts": {
+    "install": "node-gyp-build",
+    "prestart": "tree-sitter build --wasm",
+    "start": "tree-sitter playground",
+    "test": "tree-sitter test",
+    "parse": "tree-sitter parse",
+    "generate": "tree-sitter generate"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "node-gyp": "^12.3.0",
+    "tree-sitter-c": "^0.24.1",
+    "tree-sitter-cli": "^0.26.8",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  },
+  "dependencies": {
+    "node-gyp-build": "^4.8.4",
+    "node-addon-api": "^8.7.0"
+  }
+}

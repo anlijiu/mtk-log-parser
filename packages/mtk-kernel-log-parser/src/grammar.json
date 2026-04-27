@@ -1,0 +1,317 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "klog",
+  "rules": {
+    "source_file": {
+      "type": "REPEAT1",
+      "content": {
+        "type": "SYMBOL",
+        "name": "line"
+      }
+    },
+    "line": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "prefix_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "time_anchor_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "regular_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "message_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "blank_line"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "unknown_line"
+        }
+      ]
+    },
+    "prefix_line": {
+      "type": "PATTERN",
+      "value": "-----[^\\n]*\\n"
+    },
+    "blank_line": {
+      "type": "PATTERN",
+      "value": "[ \\t]*\\n"
+    },
+    "unknown_line": {
+      "type": "PATTERN",
+      "value": "[^<\\n][^\\n]*\\n|\\n"
+    },
+    "time_anchor_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "priority"
+        },
+        {
+          "type": "STRING",
+          "value": ">["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rel_time"
+        },
+        {
+          "type": "STRING",
+          "value": "]["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cpu_info"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        },
+        {
+          "type": "STRING",
+          "value": " "
+        },
+        {
+          "type": "SYMBOL",
+          "name": "thread_name"
+        },
+        {
+          "type": "STRING",
+          "value": ": "
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "tagged_info"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "android_timestamp"
+        },
+        {
+          "type": "STRING",
+          "value": " UTC;android time "
+        },
+        {
+          "type": "SYMBOL",
+          "name": "android_timestamp"
+        },
+        {
+          "type": "STRING",
+          "value": "\n"
+        }
+      ]
+    },
+    "regular_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "priority"
+        },
+        {
+          "type": "STRING",
+          "value": ">["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rel_time"
+        },
+        {
+          "type": "STRING",
+          "value": "]["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cpu_info"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        },
+        {
+          "type": "STRING",
+          "value": " "
+        },
+        {
+          "type": "SYMBOL",
+          "name": "thread_prefix"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SYMBOL",
+              "name": "tagged_info"
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "SYMBOL",
+          "name": "message"
+        },
+        {
+          "type": "STRING",
+          "value": "\n"
+        }
+      ]
+    },
+    "message_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "<"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "priority"
+        },
+        {
+          "type": "STRING",
+          "value": ">["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "rel_time"
+        },
+        {
+          "type": "STRING",
+          "value": "]["
+        },
+        {
+          "type": "SYMBOL",
+          "name": "cpu_info"
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "STRING",
+                  "value": " "
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "tagged_info"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                },
+                {
+                  "type": "CHOICE",
+                  "members": [
+                    {
+                      "type": "SYMBOL",
+                      "name": "message"
+                    },
+                    {
+                      "type": "BLANK"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "STRING",
+          "value": "\n"
+        }
+      ]
+    },
+    "priority": {
+      "type": "PATTERN",
+      "value": "\\d+"
+    },
+    "rel_time": {
+      "type": "PATTERN",
+      "value": "\\s*\\d+\\.\\d+"
+    },
+    "cpu_info": {
+      "type": "PATTERN",
+      "value": "\\s*[A-Za-z0-9][A-Za-z0-9_\\-]*\\s*"
+    },
+    "thread_name": {
+      "type": "PATTERN",
+      "value": "[^\\s:]+(?::\\d+[^\\s:]*)*"
+    },
+    "thread_prefix": {
+      "type": "TOKEN",
+      "content": {
+        "type": "PREC",
+        "value": 1,
+        "content": {
+          "type": "PATTERN",
+          "value": "[^\\s:]+(?::\\d+[^\\s:]*)*:\\s?"
+        }
+      }
+    },
+    "tagged_info": {
+      "type": "PATTERN",
+      "value": "(\\[[^\\]]*\\]\\s*)+"
+    },
+    "android_timestamp": {
+      "type": "PATTERN",
+      "value": "\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}[.,]\\d+"
+    },
+    "message": {
+      "type": "PATTERN",
+      "value": "[^\\n]*"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "\\s"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": [],
+  "reserved": {}
+}

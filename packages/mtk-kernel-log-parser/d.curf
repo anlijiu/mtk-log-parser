@@ -1,0 +1,21 @@
+----- timezone:GMT
+<7>[ 1423.257212][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 57 type 0
+<7>[ 1423.257850][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 46 type 0
+<7>[ 1423.257860][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 49 type 0
+<7>[ 1423.257867][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 53 type 0
+<7>[ 1423.260112][C608436] a.renderservice: [name:virtio_net&]Receiving skb proto 0x0800 len 88 type 0
+<7>[ 1423.260328][  T787] CarPlatform: [name:virtio_net&]eth0: xmit 00000000bc662aec 52:dd:04:f3:e1:00
+<7>[ 1423.260945][C701827] a.renderservice: [name:virtio_net&]Sent skb 00000000bc662aec
+<7>[ 1426.773567][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 46 type 0
+<7>[ 1426.773579][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0800 len 53 type 0
+<7>[ 1426.781117][C600054] ksoftirqd/6: [name:virtio_net&]Receiving skb proto 0x0800 len 125 type 0
+<7>[ 1426.781284][T600787] CarPlatform: [name:virtio_net&]eth0: xmit 000000001de34031 52:dd:04:f3:e1:00
+<7>[ 1426.781428][T700144] wdtk-7: [name:aee_hangdet&][thread:144] 2026-04-14 03:16:25.554290 UTC;android time 2026-04-14 03:16:25.554290
+<6>[ 1426.781435][T700144] wdtk-7: [name:aee_hangdet&]vm_hangdet_kick_event
+<7>[ 1426.781469][T700144] wdtk-7: [name:aee_hangdet&]vm_hangdet_kick_event return 1
+<7>[ 2112.766439][C606832] kworker/u16:1: [name:virtio_net&]Receiving skb proto 0x0800 len 172 type 0
+<7>[ 2112.769041][C604901] OtaUcIoThd: [name:virtio_net&]Receiving skb proto 0x0800 len 46 type 0
+<7>[ 2112.775479][C600781] XpVehicleHal: [name:virtio_net&]Receiving skb proto 0x0800 len 46 type 0
+<6>[ 2112.781506][  T923] OverlayEngine_0: [name:mediatek_drm&][DISP]mtk_plane_atomic_disable CRTC0 0x0000000084c8e3fe 0x0000000084c8e3fe plane 3
+<6>[ 2112.781540][  T923] OverlayEngine_0: [name:mediatek_drm&][DISP]mtk_drm_crtc_plane_disable 14606 CRTC0 comp AAL0 OVL_EXDMA3 crtc 0000000084c8e3fe
+<7>[ 2112.782549][C600000] swapper/6: [name:virtio_net&]Receiving skb proto 0x0806 len 46 type 1

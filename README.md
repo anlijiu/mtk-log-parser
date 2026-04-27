@@ -1,2 +1,2 @@
 # mtk-log-parser
-parse mtk android log
+parse mtk android&kernel log

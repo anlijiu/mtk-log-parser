@@ -1,0 +1,32 @@
+{
+  "name": "mtk-log-parser-cli",
+  "version": "1.0.0",
+  "description": "CLI tool for merging and parsing MTK logs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "mtk-log": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "type-check": "tsc --noEmit",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.10",
+    "@types/yargs": "^17.0.35",
+    "typescript": "^5.7.3",
+    "vitest": "^3.0.6"
+  },
+  "dependencies": {
+    "mtk-log-parser": "workspace:*",
+    "glob": "^13.0.6",
+    "yargs": "^18.0.0"
+  }
+}

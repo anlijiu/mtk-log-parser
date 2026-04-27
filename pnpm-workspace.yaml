@@ -1,0 +1,10 @@
+packages:
+  - packages/*
+
+ignoredBuiltDependencies:
+  - esbuild
+  - tree-sitter
+  - tree-sitter-cli
+
+onlyBuiltDependencies:
+  - tree-sitter-c

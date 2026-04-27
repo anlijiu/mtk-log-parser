@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# proxychains  npx tree-sitter build --wasm
+pnpm run prestart

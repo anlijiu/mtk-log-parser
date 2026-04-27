@@ -1,0 +1,338 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/grammar.schema.json",
+  "name": "androidlog",
+  "rules": {
+    "logs": {
+      "type": "REPEAT",
+      "content": {
+        "type": "CHOICE",
+        "members": [
+          {
+            "type": "SYMBOL",
+            "name": "begin_header"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "log_line"
+          },
+          {
+            "type": "SYMBOL",
+            "name": "ide_log_line"
+          }
+        ]
+      }
+    },
+    "begin_header": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "REPEAT1",
+          "content": {
+            "type": "STRING",
+            "value": "-"
+          }
+        },
+        {
+          "type": "SYMBOL",
+          "name": "_any"
+        }
+      ]
+    },
+    "ide_log_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "date"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "time"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "priority"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "thread_name"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tag"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "message"
+        }
+      ]
+    },
+    "thread_name": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "["
+        },
+        {
+          "type": "FIELD",
+          "name": "thread_name",
+          "content": {
+            "type": "PATTERN",
+            "value": "[^\\]]+"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "]"
+        }
+      ]
+    },
+    "log_line": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "SYMBOL",
+          "name": "date"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "time"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "pid"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tid"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "priority"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "tag"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "message"
+        }
+      ]
+    },
+    "pid": {
+      "type": "SYMBOL",
+      "name": "_num"
+    },
+    "tid": {
+      "type": "SYMBOL",
+      "name": "_num"
+    },
+    "date": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "SEQ",
+              "members": [
+                {
+                  "type": "FIELD",
+                  "name": "year",
+                  "content": {
+                    "type": "SYMBOL",
+                    "name": "_num"
+                  }
+                },
+                {
+                  "type": "STRING",
+                  "value": "-"
+                }
+              ]
+            },
+            {
+              "type": "BLANK"
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "month",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "-"
+        },
+        {
+          "type": "FIELD",
+          "name": "day",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        }
+      ]
+    },
+    "time": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "FIELD",
+          "name": "hour",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "min",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        },
+        {
+          "type": "STRING",
+          "value": ":"
+        },
+        {
+          "type": "FIELD",
+          "name": "sec",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        },
+        {
+          "type": "CHOICE",
+          "members": [
+            {
+              "type": "STRING",
+              "value": "."
+            },
+            {
+              "type": "STRING",
+              "value": ","
+            }
+          ]
+        },
+        {
+          "type": "FIELD",
+          "name": "ms",
+          "content": {
+            "type": "SYMBOL",
+            "name": "_num"
+          }
+        }
+      ]
+    },
+    "priority": {
+      "type": "CHOICE",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "E"
+        },
+        {
+          "type": "STRING",
+          "value": "ERROR"
+        },
+        {
+          "type": "STRING",
+          "value": "W"
+        },
+        {
+          "type": "STRING",
+          "value": "WARN"
+        },
+        {
+          "type": "STRING",
+          "value": "I"
+        },
+        {
+          "type": "STRING",
+          "value": "INFO"
+        },
+        {
+          "type": "STRING",
+          "value": "D"
+        },
+        {
+          "type": "STRING",
+          "value": "DEBUG"
+        },
+        {
+          "type": "STRING",
+          "value": "V"
+        },
+        {
+          "type": "STRING",
+          "value": "VERBOSE"
+        },
+        {
+          "type": "STRING",
+          "value": "T"
+        },
+        {
+          "type": "STRING",
+          "value": "TRACE"
+        },
+        {
+          "type": "STRING",
+          "value": "F"
+        },
+        {
+          "type": "STRING",
+          "value": "FINE"
+        },
+        {
+          "type": "STRING",
+          "value": "S"
+        },
+        {
+          "type": "STRING",
+          "value": "SILENT"
+        }
+      ]
+    },
+    "tag": {
+      "type": "PATTERN",
+      "value": "[^\\s:\\n][^:\\n]*:"
+    },
+    "message": {
+      "type": "SYMBOL",
+      "name": "_any"
+    },
+    "_any": {
+      "type": "PATTERN",
+      "value": "\\S.*\\S"
+    },
+    "_num": {
+      "type": "PATTERN",
+      "value": "[0-9]+"
+    }
+  },
+  "extras": [
+    {
+      "type": "PATTERN",
+      "value": "\\s"
+    }
+  ],
+  "conflicts": [],
+  "precedences": [],
+  "externals": [],
+  "inline": [],
+  "supertypes": [],
+  "reserved": {}
+}

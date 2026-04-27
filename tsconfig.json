@@ -1,0 +1,9 @@
+{
+  "files": [],
+  "references": [
+    { "path": "./packages/mtk-android-log-parser" },
+    { "path": "./packages/mtk-kernel-log-parser" },
+    { "path": "./packages/mtk-log-parser" },
+    { "path": "./packages/mtk-log-parser-cli" }
+  ]
+}
