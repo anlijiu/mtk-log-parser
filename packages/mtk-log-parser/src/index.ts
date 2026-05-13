@@ -79,7 +79,7 @@ const SORT_BEFORE = -1;
 const SORT_AFTER = 1;
 const DEFAULT_MISSING_ANCHOR_MODE: MissingKernelAnchorMode = 'throw';
 const ANDROID_AST_LANGUAGE = 'androidlog';
-const KERNEL_AST_LANGUAGE = 'klog';
+const KERNEL_AST_LANGUAGE = 'kernellog';
 const FIRST_LINE_NUMBER = 1;
 const ANDROID_FILE_PARSE_CHUNK_SIZE = 5_000;
 
@@ -94,7 +94,7 @@ const kernelGrammar: TreeSitterGrammar = {
   packageName: 'mtk-kernel-log-parser',
   libraryFile: 'libtree-sitter-kernellog.so',
   languageName: KERNEL_AST_LANGUAGE,
-  languageSymbol: 'tree_sitter_klog',
+  languageSymbol: 'tree_sitter_kernellog',
 };
 
 const requireFromHere = createRequire(import.meta.url);

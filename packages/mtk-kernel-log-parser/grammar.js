@@ -1,5 +1,5 @@
 module.exports = grammar({
-  name: "klog",
+  name: "kernellog",
 
   rules: {
     source_file: $ => repeat1($.line),

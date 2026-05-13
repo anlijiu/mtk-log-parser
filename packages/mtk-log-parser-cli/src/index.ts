@@ -9,25 +9,35 @@ import { createInterface } from 'readline';
 import { once } from 'events';
 import { tmpdir } from 'os';
 import { join, basename, resolve } from 'path';
+import { Worker } from 'worker_threads';
 import { fileURLToPath } from 'url';
-import { parseLogFileEntries, type LogSource, type UnifiedLogEntry } from 'mtk-log-parser';
+import { cpus } from 'os';
+import { type UnifiedLogEntry } from 'mtk-log-parser';
+
+const DEFAULT_WORKERS = Math.max(1, cpus().length - 1);
 
 export interface FileGroup {
-  main?: string;
-  sys?: string;
-  kernel?: string;
+  main: string[];
+  sys: string[];
+  kernel: string[];
   suffix: string;
 }
 
 type SortableEntry = {
   entry: UnifiedLogEntry;
   sequence: number;
+  fileIndex: number;
 };
+
 type SerializedEntry = Omit<UnifiedLogEntry, 'absoluteTime'> & {
   absoluteTime: string;
 };
 
-const SORT_CHUNK_SIZE = 50_000;
+type WorkerResult =
+  | { success: true; runPaths: string[]; entryCount: number; fileIndex: number }
+  | { success: false; error: string; fileIndex: number };
+
+// ─── filename grouping ────────────────────────────────────────
 
 function extractTimestampSuffix(filename: string): string | null {
   const match = basename(filename).match(/_(\d{4}_\d{4}_\d{6})/);
@@ -42,40 +52,93 @@ export function groupFilesByTimestamp(filenames: string[]): Map<string, FileGrou
     if (!suffix) continue;
 
     if (!groups.has(suffix)) {
-      groups.set(suffix, { suffix });
+      groups.set(suffix, { main: [], sys: [], kernel: [], suffix });
     }
 
     const group = groups.get(suffix)!;
 
     if (filename.includes('main_log_')) {
-      group.main = filename;
+      group.main.push(filename);
     } else if (filename.includes('sys_log_')) {
-      group.sys = filename;
+      group.sys.push(filename);
     } else if (filename.includes('kernel_log_')) {
-      group.kernel = filename;
+      group.kernel.push(filename);
     }
   }
 
   return groups;
 }
 
-async function* parseLogFile(filepath: string, source: LogSource): AsyncGenerator<UnifiedLogEntry> {
-  yield* parseLogFileEntries(filepath, source);
+// ─── worker pool ──────────────────────────────────────────────
+
+function parseWorkerUrl(): URL {
+  return new URL('./parse-worker.js', import.meta.url);
 }
 
-async function* parseGroupEntries(group: FileGroup): AsyncGenerator<UnifiedLogEntry> {
-  if (group.main) {
-    yield* parseLogFile(group.main, 'main');
+async function runWorker(
+  filepath: string,
+  source: 'main' | 'sys' | 'kernel',
+  tempDir: string,
+  fileIndex: number,
+): Promise<WorkerResult> {
+  return new Promise((resolveWorker, rejectWorker) => {
+    const worker = new Worker(parseWorkerUrl(), {
+      workerData: { filepath, source, tempDir, fileIndex },
+    });
+
+    worker.on('message', (result: WorkerResult) => {
+      resolveWorker(result);
+    });
+
+    worker.on('error', rejectWorker);
+    worker.on('exit', (code) => {
+      if (code !== 0) {
+        rejectWorker(new Error(`Worker exited with code ${code}`));
+      }
+    });
+  });
+}
+
+class WorkerPool {
+  private activeCount = 0;
+  private pending: Array<() => void> = [];
+
+  constructor(private readonly maxWorkers: number) {}
+
+  async submit(
+    filepath: string,
+    source: 'main' | 'sys' | 'kernel',
+    tempDir: string,
+    fileIndex: number,
+  ): Promise<WorkerResult> {
+    await this.acquire();
+
+    try {
+      return await runWorker(filepath, source, tempDir, fileIndex);
+    } finally {
+      this.release();
+    }
   }
 
-  if (group.sys) {
-    yield* parseLogFile(group.sys, 'sys');
+  private async acquire(): Promise<void> {
+    if (this.activeCount < this.maxWorkers) {
+      this.activeCount += 1;
+      return;
+    }
+
+    await new Promise<void>((resolvePending) => {
+      this.pending.push(resolvePending);
+    });
+    this.activeCount += 1;
   }
 
-  if (group.kernel) {
-    yield* parseLogFile(group.kernel, 'kernel');
+  private release(): void {
+    this.activeCount -= 1;
+    this.pending.shift()?.();
   }
 }
+
+// ─── sort / merge ─────────────────────────────────────────────
 
 function compareSortableEntries(leftEntry: SortableEntry, rightEntry: SortableEntry): number {
   if (leftEntry.entry.timestampMicros < rightEntry.entry.timestampMicros) {
@@ -86,23 +149,23 @@ function compareSortableEntries(leftEntry: SortableEntry, rightEntry: SortableEn
     return 1;
   }
 
+  if (leftEntry.fileIndex < rightEntry.fileIndex) {
+    return -1;
+  }
+
+  if (leftEntry.fileIndex > rightEntry.fileIndex) {
+    return 1;
+  }
+
   return leftEntry.sequence - rightEntry.sequence;
 }
 
-function serializeSortableEntry(sortableEntry: SortableEntry): string {
-  const serializedEntry: SerializedEntry = {
-    ...sortableEntry.entry,
-    absoluteTime: sortableEntry.entry.absoluteTime.toISOString(),
-  };
-
-  return JSON.stringify({ entry: serializedEntry, sequence: sortableEntry.sequence });
-}
-
 function deserializeSortableEntry(line: string): SortableEntry {
-  const parsed = JSON.parse(line) as { entry: SerializedEntry; sequence: number };
+  const parsed = JSON.parse(line) as { entry: SerializedEntry; sequence: number; fileIndex: number };
 
   return {
     sequence: parsed.sequence,
+    fileIndex: parsed.fileIndex,
     entry: {
       ...parsed.entry,
       absoluteTime: new Date(parsed.entry.absoluteTime),
@@ -114,48 +177,6 @@ async function writeStreamLine(stream: NodeJS.WritableStream, line: string): Pro
   if (!stream.write(line)) {
     await once(stream, 'drain');
   }
-}
-
-async function writeSortedRun(
-  entries: SortableEntry[],
-  tempDir: string,
-  runIndex: number,
-): Promise<string> {
-  entries.sort(compareSortableEntries);
-
-  const runPath = join(tempDir, `run-${runIndex}.jsonl`);
-  const stream = createWriteStream(runPath, { encoding: 'utf-8' });
-
-  for (const entry of entries) {
-    await writeStreamLine(stream, `${serializeSortableEntry(entry)}\n`);
-  }
-
-  stream.end();
-  await once(stream, 'finish');
-
-  return runPath;
-}
-
-async function createSortedRuns(group: FileGroup, tempDir: string): Promise<{ runPaths: string[]; entryCount: number }> {
-  const runPaths: string[] = [];
-  let chunk: SortableEntry[] = [];
-  let sequence = 0;
-
-  for await (const entry of parseGroupEntries(group)) {
-    chunk.push({ entry, sequence });
-    sequence += 1;
-
-    if (chunk.length >= SORT_CHUNK_SIZE) {
-      runPaths.push(await writeSortedRun(chunk, tempDir, runPaths.length));
-      chunk = [];
-    }
-  }
-
-  if (chunk.length > 0) {
-    runPaths.push(await writeSortedRun(chunk, tempDir, runPaths.length));
-  }
-
-  return { runPaths, entryCount: sequence };
 }
 
 type RunReader = {
@@ -310,14 +331,53 @@ async function writeMergedOutput(runPaths: string[], outputPath: string): Promis
   await once(output, 'finish');
 }
 
-export async function mergeLogFiles(group: FileGroup, outputPath: string, tempParentDir = tmpdir()): Promise<number> {
+export async function mergeLogFiles(
+  group: FileGroup,
+  outputPath: string,
+  tempParentDir = tmpdir(),
+  maxWorkers = DEFAULT_WORKERS,
+): Promise<number> {
   const tempDir = await mkdtemp(join(tempParentDir, 'mtk-log-parser-cli-'));
+  const pool = new WorkerPool(maxWorkers);
 
   try {
-    const { runPaths, entryCount } = await createSortedRuns(group, tempDir);
-    await writeMergedOutput(runPaths, outputPath);
+    const files: Array<{ filepath: string; source: 'main' | 'sys' | 'kernel' }> = [];
 
-    return entryCount;
+    for (const filepath of group.main) {
+      files.push({ filepath, source: 'main' });
+    }
+
+    for (const filepath of group.sys) {
+      files.push({ filepath, source: 'sys' });
+    }
+
+    for (const filepath of group.kernel) {
+      files.push({ filepath, source: 'kernel' });
+    }
+
+    const results = await Promise.all(
+      files.map((file, fileIndex) =>
+        pool.submit(file.filepath, file.source, tempDir, fileIndex),
+      ),
+    );
+
+    const failedResult = results.find(
+      (result): result is WorkerResult & { success: false } => !result.success,
+    );
+
+    if (failedResult) {
+      throw new Error(`Parse failed for file index ${failedResult.fileIndex}: ${failedResult.error}`);
+    }
+
+    const successfulResults = results as Array<WorkerResult & { success: true }>;
+    const allRunPaths = successfulResults.flatMap((result) => result.runPaths);
+    const totalEntries = successfulResults.reduce((sum, result) => sum + result.entryCount, 0);
+
+    if (allRunPaths.length > 0) {
+      await writeMergedOutput(allRunPaths, outputPath);
+    }
+
+    return totalEntries;
   } finally {
     await rm(tempDir, { force: true, recursive: true });
   }
@@ -328,6 +388,8 @@ function formatLogEntry(entry: UnifiedLogEntry): string {
   return `${timeStr} [${entry.source}] ${entry.priority} ${entry.tag ? `[${entry.tag}] ` : ''}${entry.message}`;
 }
 
+// ─── main CLI ─────────────────────────────────────────────────
+
 async function main() {
   const argv = await yargs(hideBin(process.argv))
     .option('dir', {
@@ -335,6 +397,12 @@ async function main() {
       type: 'string',
       description: 'Directory containing log files',
       demandOption: true,
+    })
+    .option('workers', {
+      alias: 'w',
+      type: 'number',
+      description: `Number of worker threads (default: ${DEFAULT_WORKERS})`,
+      default: DEFAULT_WORKERS,
     })
     .argv;
 
@@ -350,7 +418,7 @@ async function main() {
   for (const [suffix, group] of groups) {
     const outputFilename = `merged_${suffix}`;
     const outputPath = join(dir, outputFilename);
-    const entryCount = await mergeLogFiles(group, outputPath);
+    const entryCount = await mergeLogFiles(group, outputPath, tmpdir(), argv.workers);
 
     console.log(`Created ${outputPath} with ${entryCount} entries`);
   }
